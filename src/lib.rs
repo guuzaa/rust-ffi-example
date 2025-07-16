@@ -1,6 +1,8 @@
 // Include the generated bindings
+#![allow(clippy::missing_safety_doc)]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+use core::ffi;
 use std::{ops::Index, slice};
 
 /// Rust wrapper for the C Packet struct
@@ -32,7 +34,7 @@ impl PacketWrapper {
 
     /// Get the length of the packet
     pub fn len(&self) -> u16 {
-        unsafe { get_packet_len(self.ptr as *mut libc::c_void) }
+        unsafe { get_packet_len(self.ptr as *mut ffi::c_void) }
     }
 
     /// Check if the packet is empty

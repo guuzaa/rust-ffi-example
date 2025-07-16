@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Create shared library
-add_library(ffi_lib SHARED
+add_library(ffi_lib STATIC
     lib.c
 )
 

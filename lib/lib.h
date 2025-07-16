@@ -1,9 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stddef.h>
-
-#define MAX_PACKET_SIZE 1024
 
 typedef struct
 {

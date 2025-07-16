@@ -1,4 +1,5 @@
 #include "lib.h"
+#include <stddef.h>
 
 uint16_t get_packet_len(void* packet_ptr) {
     if (packet_ptr == NULL) {

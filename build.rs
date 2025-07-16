@@ -13,7 +13,7 @@ fn main() {
     // Find the built library
     let lib_path = dst.join("build");
     println!("cargo:rustc-link-search=native={}", lib_path.display());
-    println!("cargo:rustc-link-lib=dylib=ffi_lib");
+    println!("cargo:rustc-link-lib=static=ffi_lib");
 
     // Generate bindings
     let bindings = bindgen::Builder::default()
