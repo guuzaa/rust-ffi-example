@@ -182,6 +182,15 @@ mod tests {
     }
 
     #[test]
+    fn test_packet_wrapper_length_zero() {
+        let wrapper = PacketWrapper::new(0).expect("Failed to create packet wrapper");
+        assert_eq!(wrapper.len(), 0);
+        assert!(wrapper.is_empty());
+        assert_eq!(wrapper.data(), &[]);
+        assert_eq!(wrapper.get(3), None);
+    }
+
+    #[test]
     fn test_packet_wrapper_from_slice() {
         let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let wrapper = PacketWrapper::try_from(&data[..]).expect("Failed to create packet wrapper");
@@ -192,7 +201,7 @@ mod tests {
         assert_eq!(wrapper[1], 2);
 
         let vec: Vec<i32> = (1..=4).collect();
-        let wrapper2 = PacketWrapper::try_from(&vec[..]).expect("Failed to create packet wrapper");
+        let wrapper2 = PacketWrapper::try_from(&*vec).expect("Failed to create packet wrapper");
         assert_eq!(wrapper2.len(), 4);
         assert!(!wrapper2.is_empty());
         assert_eq!(wrapper2.data(), &[1, 2, 3, 4]);
@@ -203,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Index out of bounds")]
     fn test_packet_wrapper_out_of_bounds() {
         let data = [1, 2, 3];
         let wrapper = PacketWrapper::try_from(&data[..]).expect("Failed to create packet wrapper");
