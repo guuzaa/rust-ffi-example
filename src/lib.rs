@@ -1,25 +1,26 @@
-// Include the generated bindings
-#![allow(clippy::missing_safety_doc)]
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+mod bindings;
 
 use core::ffi;
 use std::{ops::Index, slice};
 
 /// Rust wrapper for the C Packet struct
-pub struct PacketWrapper {
-    ptr: *mut Packet,
+pub struct Packet {
+    ptr: *mut bindings::Packet,
     layout: std::alloc::Layout,
 }
 
-impl PacketWrapper {
-    /// Create a new PacketWrapper with the specified length
+impl Packet {
+    /// Create a new Packet with the specified length
     pub fn new(length: u16) -> Option<Self> {
         let data_size = length as usize * std::mem::size_of::<i32>();
-        let total_size = std::mem::size_of::<Packet>() + data_size;
+        let total_size = std::mem::size_of::<bindings::Packet>() + data_size;
 
-        let layout =
-            std::alloc::Layout::from_size_align(total_size, std::mem::align_of::<Packet>()).ok()?;
-        let ptr = unsafe { std::alloc::alloc(layout) as *mut Packet };
+        let layout = std::alloc::Layout::from_size_align(
+            total_size,
+            std::mem::align_of::<bindings::Packet>(),
+        )
+        .ok()?;
+        let ptr = unsafe { std::alloc::alloc(layout) as *mut bindings::Packet };
 
         if ptr.is_null() {
             return None;
@@ -34,7 +35,7 @@ impl PacketWrapper {
 
     /// Get the length of the packet
     pub fn len(&self) -> u16 {
-        unsafe { get_packet_len(self.ptr as *mut ffi::c_void) }
+        unsafe { bindings::get_packet_len(self.ptr as *mut ffi::c_void) }
     }
 
     /// Check if the packet is empty
@@ -85,17 +86,17 @@ impl PacketWrapper {
     }
 
     /// Get the raw pointer
-    pub fn as_ptr(&self) -> *const Packet {
+    pub fn as_ptr(&self) -> *const bindings::Packet {
         self.ptr
     }
 
     /// Get the raw mutable pointer
-    pub fn as_mut_ptr(&mut self) -> *mut Packet {
+    pub fn as_mut_ptr(&mut self) -> *mut bindings::Packet {
         self.ptr
     }
 }
 
-impl<'a> IntoIterator for &'a PacketWrapper {
+impl<'a> IntoIterator for &'a Packet {
     type Item = &'a i32;
     type IntoIter = slice::Iter<'a, i32>;
 
@@ -104,7 +105,7 @@ impl<'a> IntoIterator for &'a PacketWrapper {
     }
 }
 
-impl<'a> IntoIterator for &'a mut PacketWrapper {
+impl<'a> IntoIterator for &'a mut Packet {
     type Item = &'a mut i32;
     type IntoIter = slice::IterMut<'a, i32>;
 
@@ -113,22 +114,22 @@ impl<'a> IntoIterator for &'a mut PacketWrapper {
     }
 }
 
-impl std::fmt::Debug for PacketWrapper {
+impl std::fmt::Debug for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PacketWrapper")
+        f.debug_struct("Packet")
             .field("length", &self.len())
             .field("data", &self.data())
             .finish()
     }
 }
 
-impl std::fmt::Display for PacketWrapper {
+impl std::fmt::Display for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Packet(length: {}, data: {:?})", self.len(), self.data())
     }
 }
 
-impl Drop for PacketWrapper {
+impl Drop for Packet {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
             unsafe {
@@ -138,18 +139,18 @@ impl Drop for PacketWrapper {
     }
 }
 
-impl TryFrom<&[i32]> for PacketWrapper {
+impl TryFrom<&[i32]> for Packet {
     type Error = ();
 
     fn try_from(data: &[i32]) -> Result<Self, Self::Error> {
         let length = data.len() as u16;
-        let mut wrapper = PacketWrapper::new(length).ok_or(())?;
+        let mut wrapper = Packet::new(length).ok_or(())?;
         wrapper.data_mut().copy_from_slice(data);
         Ok(wrapper)
     }
 }
 
-impl Index<usize> for PacketWrapper {
+impl Index<usize> for Packet {
     type Output = i32;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -164,7 +165,7 @@ mod tests {
     #[test]
     fn test_packet_wrapper() {
         // Create a new packet wrapper
-        let mut wrapper = PacketWrapper::new(3).expect("Failed to create packet wrapper");
+        let mut wrapper = Packet::new(3).expect("Failed to create packet wrapper");
 
         // Set some test data
         let data = wrapper.data_mut();
@@ -183,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_packet_wrapper_length_zero() {
-        let wrapper = PacketWrapper::new(0).expect("Failed to create packet wrapper");
+        let wrapper = Packet::new(0).expect("Failed to create packet wrapper");
         assert_eq!(wrapper.len(), 0);
         assert!(wrapper.is_empty());
         assert_eq!(wrapper.data(), &[]);
@@ -193,7 +194,7 @@ mod tests {
     #[test]
     fn test_packet_wrapper_from_slice() {
         let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let wrapper = PacketWrapper::try_from(&data[..]).expect("Failed to create packet wrapper");
+        let wrapper = Packet::try_from(&data[..]).expect("Failed to create packet wrapper");
         assert_eq!(wrapper.len(), 10);
         assert!(!wrapper.is_empty());
         assert_eq!(wrapper.data(), &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -201,7 +202,7 @@ mod tests {
         assert_eq!(wrapper[1], 2);
 
         let vec: Vec<i32> = (1..=4).collect();
-        let wrapper2 = PacketWrapper::try_from(&*vec).expect("Failed to create packet wrapper");
+        let wrapper2 = Packet::try_from(&*vec).expect("Failed to create packet wrapper");
         assert_eq!(wrapper2.len(), 4);
         assert!(!wrapper2.is_empty());
         assert_eq!(wrapper2.data(), &[1, 2, 3, 4]);
@@ -215,7 +216,7 @@ mod tests {
     #[should_panic(expected = "Index out of bounds")]
     fn test_packet_wrapper_out_of_bounds() {
         let data = [1, 2, 3];
-        let wrapper = PacketWrapper::try_from(&data[..]).expect("Failed to create packet wrapper");
+        let wrapper = Packet::try_from(&data[..]).expect("Failed to create packet wrapper");
         _ = wrapper[10];
     }
 }
