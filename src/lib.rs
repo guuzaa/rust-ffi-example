@@ -3,6 +3,59 @@ mod bindings;
 use core::ffi;
 use std::{ops::Index, slice};
 
+/// Macro to create a Packet with the given elements
+///
+/// # Examples
+///
+/// ```
+/// use ffi_example::packet;
+///
+/// // Create a packet with specific values
+/// let p = packet![1, 2, 3, 4];
+/// assert_eq!(p.len(), 4);
+/// assert!(!p.is_empty());
+/// assert_eq!(p.data(), &[1, 2, 3, 4]);
+///
+/// // Create an empty packet
+/// let empty = packet![];
+/// assert_eq!(empty.len(), 0);
+/// assert!(empty.is_empty());
+/// assert_eq!(empty.data(), &[]);
+///
+/// // Create a packet with repeated values
+/// let repeated = packet![42; 5];
+/// assert_eq!(repeated.len(), 5);
+/// assert!(!repeated.is_empty());
+/// assert_eq!(repeated.data(), &[42, 42, 42, 42, 42]);
+/// ```
+#[macro_export]
+macro_rules! packet {
+    // Empty packet
+    () => {
+        $crate::Packet::new(0).expect("Failed to create empty packet")
+    };
+
+    // Packet with repeated value: packet![value; count]
+    ($elem:expr; $n:expr) => {
+        {
+            let mut packet = $crate::Packet::new($n as u16).expect("Failed to create packet");
+            let data = packet.data_mut();
+            for i in 0..$n {
+                data[i] = $elem;
+            }
+            packet
+        }
+    };
+
+    // Packet with specific values: packet![1, 2, 3]
+    ($($x:expr),+ $(,)?) => {
+        {
+            let data = [$($x),+];
+            $crate::Packet::try_from(&data[..]).expect("Failed to create packet from data")
+        }
+    };
+}
+
 /// Rust wrapper for the C Packet struct
 pub struct Packet {
     ptr: *mut bindings::Packet,
@@ -158,6 +211,54 @@ impl Index<usize> for Packet {
     }
 }
 
+impl Index<std::ops::Range<usize>> for Packet {
+    type Output = [i32];
+
+    fn index(&self, range: std::ops::Range<usize>) -> &Self::Output {
+        &self.data()[range]
+    }
+}
+
+impl Index<std::ops::RangeFrom<usize>> for Packet {
+    type Output = [i32];
+
+    fn index(&self, range: std::ops::RangeFrom<usize>) -> &Self::Output {
+        &self.data()[range]
+    }
+}
+
+impl Index<std::ops::RangeTo<usize>> for Packet {
+    type Output = [i32];
+
+    fn index(&self, range: std::ops::RangeTo<usize>) -> &Self::Output {
+        &self.data()[range]
+    }
+}
+
+impl Index<std::ops::RangeFull> for Packet {
+    type Output = [i32];
+
+    fn index(&self, _range: std::ops::RangeFull) -> &Self::Output {
+        self.data()
+    }
+}
+
+impl Index<std::ops::RangeInclusive<usize>> for Packet {
+    type Output = [i32];
+
+    fn index(&self, range: std::ops::RangeInclusive<usize>) -> &Self::Output {
+        &self.data()[range]
+    }
+}
+
+impl Index<std::ops::RangeToInclusive<usize>> for Packet {
+    type Output = [i32];
+
+    fn index(&self, range: std::ops::RangeToInclusive<usize>) -> &Self::Output {
+        &self.data()[range]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,8 +316,45 @@ mod tests {
     #[test]
     #[should_panic(expected = "Index out of bounds")]
     fn test_packet_wrapper_out_of_bounds() {
-        let data = [1, 2, 3];
-        let wrapper = Packet::try_from(&data[..]).expect("Failed to create packet wrapper");
-        _ = wrapper[10];
+        let packet = packet![1, 2, 3];
+        _ = packet[10];
+    }
+
+    #[test]
+    fn test_packet_macro_single_value() {
+        let packet = packet![123];
+        assert_eq!(packet.len(), 1);
+        assert!(!packet.is_empty());
+        assert_eq!(packet.data(), &[123]);
+    }
+
+    #[test]
+    fn test_packet_slice_indexing() {
+        let packet = packet![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+        // Test various slice patterns
+        assert_eq!(&packet[..], &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        assert_eq!(&packet[..5], &[1, 2, 3, 4, 5]);
+        assert_eq!(&packet[5..], &[6, 7, 8, 9, 10]);
+        assert_eq!(&packet[2..7], &[3, 4, 5, 6, 7]);
+        assert_eq!(&packet[..=4], &[1, 2, 3, 4, 5]);
+        assert_eq!(&packet[5..=9], &[6, 7, 8, 9, 10]);
+    }
+
+    #[test]
+    fn test_packet_slice_edge_cases() {
+        let packet = packet![1, 2, 3];
+
+        // Test empty slices
+        assert_eq!(&packet[0..0], &[]);
+        assert_eq!(&packet[3..3], &[]);
+
+        // Test full range
+        assert_eq!(&packet[..], &[1, 2, 3]);
+
+        // Test single element slices
+        assert_eq!(&packet[1..2], &[2]);
+        assert_eq!(&packet[..=0], &[1]);
+        assert_eq!(&packet[2..=2], &[3]);
     }
 }
