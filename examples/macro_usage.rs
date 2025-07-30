@@ -5,19 +5,19 @@ fn main() {
 
     // Create an empty packet
     let empty = packet![];
-    println!("Empty packet: {:?}", empty);
+    println!("Empty packet: {empty:?}");
 
     // Create a packet with specific values
     let values = packet![1, 2, 3, 4, 5];
-    println!("Packet with values: {:?}", values);
+    println!("Packet with values: {values:?}");
 
     // Create a packet with repeated values
     let repeated = packet![42; 5];
-    println!("Packet with repeated values: {:?}", repeated);
+    println!("Packet with repeated values: {repeated:?}");
 
     // Create a single-value packet
     let single = packet![123];
-    println!("Single value packet: {:?}", single);
+    println!("Single value packet: {single:?}");
 
     // Create a large packet with zeros
     let large = packet![0; 10];
@@ -36,7 +36,7 @@ fn main() {
     // Demonstrate iteration
     println!("\nIterating over packet values:");
     for (i, &value) in values.into_iter().enumerate() {
-        println!("  [{}] = {}", i, value);
+        println!("  [{i}] = {value}");
     }
 
     // Demonstrate indexing
